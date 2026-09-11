@@ -1,0 +1,30 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "app_state.c"
+        "weather_ui.c"
+        "weather_icons.c"
+        "serial_console.c"
+        "wifi_ota.c"
+        "pmu_axp2101.c"
+        "rtc_pcf85063.c"
+        "status_json.c"
+        "fonts/font_montserrat_14_latin.c"
+        "fonts/font_montserrat_18_latin.c"
+        "fonts/font_montserrat_26_latin.c"
+        "fonts/font_montserrat_72_latin.c"
+    INCLUDE_DIRS "."
+    EMBED_TXTFILES "www/index.html"
+    REQUIRES
+        console
+        nvs_flash
+        esp_wifi
+        esp_netif
+        esp_event
+        esp_http_server
+        app_update
+        esp_app_format
+        esp_timer
+        json
+        driver
+)

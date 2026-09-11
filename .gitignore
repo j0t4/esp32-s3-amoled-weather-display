@@ -1,0 +1,26 @@
+# --- Toolchain y ESP-IDF instalados localmente por setup_tools.ps1 (~2 GB)
+tools/
+
+# --- Salidas de compilación y componentes descargados del registro
+weather_display/build/
+weather_display/managed_components/
+weather_display/sdkconfig
+weather_display/sdkconfig.old
+weather_display/*_log.txt
+
+# --- Volcados de flash y logs del dispositivo: contienen la NVS (credenciales Wi-Fi, MAC...)
+*.bin
+*.bin.sha256
+boot_log_*.txt
+
+# --- Python
+__pycache__/
+*.pyc
+.venv/
+
+# --- Editores y sistema
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store

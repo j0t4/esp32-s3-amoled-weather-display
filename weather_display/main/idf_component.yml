@@ -1,0 +1,8 @@
+## Managed component dependencies (downloaded from components.espressif.com at first build)
+dependencies:
+  idf: ">=5.5,<6.1"
+  waveshare/esp32_s3_touch_amoled_1_8:
+    version: "^2.0.3"
+    public: true
+  lvgl/lvgl: "^9.2"
+  espressif/mdns: "^1.4"

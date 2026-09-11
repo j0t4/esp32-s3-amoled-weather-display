@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weather Display · Firmware</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 48px; font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background: linear-gradient(180deg, #16213a 0%, #0d1424 100%); color: #e8eefb; min-height: 100vh; }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; color: #a9b8d6; text-transform: uppercase; letter-spacing: .06em; }
+  .sub { color: #8fa0c2; margin: 0 0 22px; }
+  .card { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 18px 20px; margin-bottom: 18px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 18px; }
+  .kv b { display: block; font-size: 12px; color: #8fa0c2; font-weight: 500; }
+  .kv span { font-variant-numeric: tabular-nums; word-break: break-all; }
+  .weather-now { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 14px; }
+  .temp { font-size: 44px; font-weight: 600; line-height: 1; }
+  .city { font-size: 18px; }
+  .sky { color: #a9b8d6; }
+  label { display: block; font-size: 12px; color: #8fa0c2; margin: 10px 0 4px; }
+  input, select { width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.14);
+                  background: rgba(0,0,0,.25); color: #fff; font: inherit; }
+  input[type=file] { padding: 7px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0 14px; }
+  button { margin-top: 14px; padding: 10px 18px; border: 0; border-radius: 10px; background: #3d8bff; color: #fff;
+           font: inherit; font-weight: 600; cursor: pointer; }
+  button.secondary { background: rgba(255,255,255,.12); }
+  button.danger { background: #c0392b; }
+  button:disabled { opacity: .5; cursor: default; }
+  progress { width: 100%; height: 14px; margin-top: 12px; accent-color: #3d8bff; }
+  .msg { margin-top: 10px; min-height: 1.4em; }
+  .ok { color: #6ee7a0; } .err { color: #ff7b7b; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; background: rgba(255,255,255,.1); }
+  .pill.on { background: rgba(110,231,160,.18); color: #6ee7a0; }
+  code { background: rgba(0,0,0,.3); padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+  footer { color: #6d7d9e; font-size: 12px; text-align: center; margin-top: 30px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Weather Display</h1>
+  <p class="sub">Waveshare ESP32-S3-Touch-AMOLED-1.8 · panel de mantenimiento</p>
+
+  <section class="card">
+    <h2>Actualizar firmware</h2>
+    <p style="margin-top:0">Selecciona el archivo <code>weather_display.bin</code> generado por <code>build.ps1</code>
+       (carpeta <code>build/</code>). No uses el <em>bootloader</em> ni la imagen combinada.</p>
+    <input type="file" id="fw" accept=".bin">
+    <button id="btnUpdate">Actualizar</button>
+    <progress id="prog" value="0" max="100" hidden></progress>
+    <div class="msg" id="updMsg"></div>
+  </section>
+
+  <section class="card">
+    <h2>Firmware en ejecución</h2>
+    <div class="grid" id="fwInfo"></div>
+  </section>
+
+  <section class="card">
+    <h2>Estado del dispositivo</h2>
+    <div class="weather-now" id="now"></div>
+    <div class="grid" id="devInfo"></div>
+  </section>
+
+  <section class="card">
+    <h2>Enviar datos del tiempo</h2>
+    <p style="margin-top:0">Equivale al comando serie
+       <code>/set_weather -city "Madrid" -temperature "32ºC" -sky "sunny"</code>.</p>
+    <form id="wform">
+      <div class="row">
+        <div><label>Ciudad</label><input name="city" value="Madrid" required></div>
+        <div><label>Temperatura</label><input name="temperature" placeholder="32ºC" required></div>
+        <div><label>Cielo</label>
+          <select name="sky">
+            <option value="sunny">sunny · Soleado</option>
+            <option value="night">night · Despejado (noche)</option>
+            <option value="partly cloudy">partly cloudy · Parcialmente nublado</option>
+            <option value="cloudy">cloudy · Nublado</option>
+            <option value="rain">rain · Lluvia</option>
+            <option value="storm">storm · Tormenta</option>
+            <option value="snow">snow · Nieve</option>
+            <option value="fog">fog · Niebla</option>
+            <option value="windy">windy · Viento</option>
+          </select></div>
+      </div>
+      <div class="row">
+        <div><label>Humedad (%)</label><input name="humidity" type="number" min="0" max="100"></div>
+        <div><label>Viento</label><input name="wind" placeholder="12 km/h NE"></div>
+        <div><label>Sensación</label><input name="feels_like" placeholder="34"></div>
+        <div><label>Mínima</label><input name="temp_min" placeholder="18"></div>
+        <div><label>Máxima</label><input name="temp_max" placeholder="34"></div>
+        <div><label>Presión (hPa)</label><input name="pressure" type="number"></div>
+        <div><label>Índice UV</label><input name="uv" type="number" min="0"></div>
+      </div>
+      <label>Descripción</label><input name="description" placeholder="Cielo despejado toda la tarde">
+      <button type="submit">Enviar</button>
+      <div class="msg" id="wMsg"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Red Wi-Fi</h2>
+    <p style="margin-top:0">Si conectas la placa a tu red podrás abrir esta página en
+       <code>http://weather-display.local/</code> sin usar el punto de acceso.</p>
+    <form id="wifiform">
+      <div class="row">
+        <div><label>SSID</label><input name="ssid" required></div>
+        <div><label>Contraseña</label><input name="password" type="password"></div>
+      </div>
+      <button type="submit">Guardar y conectar</button>
+      <button type="button" class="secondary" id="wifiClear">Borrar credenciales</button>
+      <div class="msg" id="wifiMsg"></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Pantalla y sistema</h2>
+    <label>Brillo: <span id="briVal"></span> %</label>
+    <input type="range" id="bri" min="5" max="100" step="5">
+    <button class="danger" id="btnReboot">Reiniciar</button>
+    <div class="msg" id="sysMsg"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</main>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const kv = (b, v) => `<div class="kv"><b>${b}</b><span>${v ?? '—'}</span></div>`;
+  const fmtUptime = (s) => { const d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
+                             return (d ? d+' d ' : '') + h+' h '+m+' min'; };
+  const fmtBytes = (b) => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
+  let briTouched = false;
+
+  async function api(path, body) {
+    const r = await fetch(path, body === undefined ? {} : { method: 'POST', body: JSON.stringify(body),
+                                                            headers: { 'Content-Type': 'application/json' } });
+    const j = await r.json().catch(() => ({ ok: r.ok, message: r.statusText }));
+    return { ok: r.ok && j.ok !== false, message: j.message, data: j };
+  }
+  function show(el, res) { el.textContent = res.message || (res.ok ? 'OK' : 'Error'); el.className = 'msg ' + (res.ok ? 'ok' : 'err'); }
+
+  async function refresh() {
+    try {
+      const s = (await api('/api/status')).data;
+      const f = s.firmware, y = s.system, w = s.weather, b = s.battery, n = s.network, t = s.time;
+      $('#fwInfo').innerHTML = kv('Proyecto', f.project) + kv('Versión', f.version) + kv('Compilado', f.build)
+        + kv('ESP-IDF', f.idf) + kv('Partición activa', `${f.running_partition} (${fmtBytes(f.partition_size)})`)
+        + kv('SHA-256 (ELF)', f.elf_sha256) + kv('Tiempo encendido', fmtUptime(y.uptime_s))
+        + kv('RAM libre', fmtBytes(y.heap_free)) + kv('PSRAM libre', fmtBytes(y.psram_free)) + kv('MAC', y.mac);
+
+      $('#now').innerHTML = w.valid
+        ? `<div class="temp">${w.temperature ?? '--'}°${w.unit}</div><div><div class="city">${w.city}</div>
+           <div class="sky">${w.sky_label}${w.description ? ' · ' + w.description : ''}</div>
+           <div class="sky" style="font-size:12px">Actualizado ${w.updated_local || '—'}</div></div>`
+        : `<div class="sky">Sin datos meteorológicos todavía. Envíalos por USB serie o con el formulario de abajo.</div>`;
+
+      const bat = !b.pmu_present ? 'PMU no detectado'
+                : !b.battery_present ? 'Sin batería (alimentación USB)'
+                : `${b.percent ?? '?'} % · ${(b.voltage_mv/1000).toFixed(2)} V ${b.charging ? '· cargando' : ''}`;
+      $('#devInfo').innerHTML = kv('Hora del dispositivo', t.valid ? t.local : `${t.local} <span class="pill">sin ajustar</span>`)
+        + kv('Batería', bat)
+        + kv('Punto de acceso', n.ap_active ? `<span class="pill on">activo</span> ${n.ap_ip}` : 'inactivo')
+        + kv('Red Wi-Fi', n.sta_connected ? `<span class="pill on">${n.sta_ssid}</span> ${n.sta_ip}` : (n.sta_ssid ? `${n.sta_ssid} <span class="pill">conectando…</span>` : 'sin configurar'))
+        + kv('Humedad', w.humidity != null ? w.humidity + ' %' : null) + kv('Viento', w.wind || null)
+        + kv('Sensación', w.feels_like != null ? w.feels_like + '°' : null)
+        + kv('Mín / Máx', (w.temp_min != null || w.temp_max != null) ? `${w.temp_min ?? '--'}° / ${w.temp_max ?? '--'}°` : null)
+        + kv('Presión', w.pressure != null ? w.pressure + ' hPa' : null) + kv('Índice UV', w.uv_index);
+      if (!briTouched) { $('#bri').value = y.brightness; $('#briVal').textContent = y.brightness; }
+      $('#foot').textContent = `${n.hostname}.local · ${location.host}`;
+    } catch (e) { /* device rebooting or unreachable: keep last values */ }
+  }
+
+  /* ---- firmware update ---- */
+  $('#btnUpdate').addEventListener('click', () => {
+    const file = $('#fw').files[0], msg = $('#updMsg'), prog = $('#prog'), btn = $('#btnUpdate');
+    if (!file) { show(msg, { ok: false, message: 'Selecciona un archivo .bin' }); return; }
+    if (!file.name.endsWith('.bin')) { show(msg, { ok: false, message: 'El archivo debe ser .bin' }); return; }
+    btn.disabled = true; prog.hidden = false; prog.value = 0;
+    msg.textContent = `Subiendo ${file.name} (${fmtBytes(file.size)})…`; msg.className = 'msg';
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/update');
+    xhr.timeout = 300000;
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) prog.value = Math.round(e.loaded * 100 / e.total); };
+    xhr.onload = () => {
+      let j = {}; try { j = JSON.parse(xhr.responseText); } catch (_) {}
+      const ok = xhr.status === 200 && j.ok !== false;
+      show(msg, { ok, message: j.message || xhr.statusText });
+      if (ok) { prog.value = 100; msg.textContent += ' La página se recargará cuando el dispositivo vuelva.'; waitForReboot(); }
+      else btn.disabled = false;
+    };
+    xhr.onerror = xhr.ontimeout = () => { show(msg, { ok: false, message: 'Conexión perdida durante la subida' }); btn.disabled = false; };
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.send(file);
+  });
+
+  function waitForReboot() {
+    let tries = 0;
+    const iv = setInterval(async () => {
+      tries++;
+      try { const r = await fetch('/api/status', { cache: 'no-store' }); if (r.ok && tries > 2) { clearInterval(iv); location.reload(); } }
+      catch (_) {}
+      if (tries > 60) clearInterval(iv);
+    }, 2000);
+  }
+
+  /* ---- weather form ---- */
+  $('#wform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target), body = {};
+    for (const [k, v] of fd.entries()) if (v.trim() !== '') body[k] = v.trim();
+    show($('#wMsg'), await api('/api/weather', body));
+    refresh();
+  });
+
+  /* ---- wifi ---- */
+  $('#wifiform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    show($('#wifiMsg'), await api('/api/wifi', { ssid: fd.get('ssid'), password: fd.get('password') }));
+  });
+  $('#wifiClear').addEventListener('click', async () => show($('#wifiMsg'), await api('/api/wifi', { clear: true })));
+
+  /* ---- brightness / reboot ---- */
+  $('#bri').addEventListener('input', () => { briTouched = true; $('#briVal').textContent = $('#bri').value; });
+  $('#bri').addEventListener('change', async () => { show($('#sysMsg'), await api('/api/brightness', { level: +$('#bri').value })); briTouched = false; });
+  $('#btnReboot').addEventListener('click', async () => {
+    if (!confirm('¿Reiniciar el dispositivo?')) return;
+    show($('#sysMsg'), await api('/reboot', {})); waitForReboot();
+  });
+
+  refresh();
+  setInterval(refresh, 5000);
+})();
+</script>
+</body>
+</html>
