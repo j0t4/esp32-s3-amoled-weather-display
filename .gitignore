@@ -24,3 +24,8 @@ __pycache__/
 *.swp
 Thumbs.db
 .DS_Store
+
+# --- Fotos y capturas locales
+*.jpeg
+*.jpg
+*.png

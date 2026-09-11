@@ -24,7 +24,8 @@ pantalla, y una página web servida por la propia placa para actualizar el firmw
 | Tarjeta de detalles | Humedad, viento, sensación térmica, mín/máx, presión, índice UV |
 | Pie | "Actualizado hace N min" (en naranja si los datos tienen más de 3 h) y la URL de la página OTA |
 
-El fondo cambia de color según el cielo. Los datos se guardan en NVS y sobreviven al reinicio.
+Estilo retro de terminal: fondo casi negro, fuente monoespaciada VT323 y un color de acento
+(ámbar, cian, gris, azul...) que cambia según el cielo. Los datos se guardan en NVS y sobreviven al reinicio.
 
 ## Hardware
 
@@ -113,5 +114,5 @@ python -m esptool --port COM9 --baud 921600 read-flash 0 0x1000000 backup_full_1
 
 Código propio bajo licencia MIT. Usa ESP-IDF (Apache-2.0), LVGL (MIT), el BSP
 `waveshare/esp32_s3_touch_amoled_1_8` (Apache-2.0) y datos meteorológicos de
-[Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Las fuentes Montserrat (OFL) se convirtieron con
-`lv_font_conv`.
+[Open-Meteo](https://open-meteo.com/) (CC BY 4.0). La fuente de pantalla es
+[VT323](https://fonts.google.com/specimen/VT323) (OFL), convertida a bitmaps LVGL con `lv_font_conv`.

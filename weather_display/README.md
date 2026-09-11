@@ -19,14 +19,14 @@ weather_display/
 ├── main/
 │   ├── main.c              arranque: NVS, pantalla (BSP), sensores I2C, UI, Wi-Fi, consola
 │   ├── app_state.[ch]      estado compartido + persistencia NVS + parseo de -temperature / -sky
-│   ├── weather_ui.[ch]     tarjeta LVGL 9 (fondo degradado según el cielo, tarjeta de detalles)
+│   ├── weather_ui.[ch]     tarjeta LVGL 9 estilo retro (fondo oscuro, acento según el cielo, panel de detalles)
 │   ├── weather_icons.[ch]  iconos sol/nube/lluvia/tormenta/nieve/niebla/luna/viento con primitivas
 │   ├── serial_console.[ch] comandos /set_weather /set_time /set_wifi /brightness /status /reboot
 │   ├── wifi_ota.[ch]       punto de acceso + estación, servidor HTTP, subida OTA, mDNS, SNTP
 │   ├── status_json.[ch]    JSON de estado (firmware, hora, tiempo, batería, red)
 │   ├── pmu_axp2101.[ch]    batería / carga (I2C 0x34)
 │   ├── rtc_pcf85063.[ch]   reloj de tiempo real (I2C 0x51)
-│   ├── fonts/              Montserrat 14/18/26/72 con Latin-1 (acentos, º, °) generadas con lv_font_conv
+│   ├── fonts/              VT323 (fuente de terminal retro) 24/30/42/100 px con Latin-1, generadas con lv_font_conv
 │   ├── www/index.html      página web de actualización de firmware (se incrusta en el binario)
 │   └── idf_component.yml   dependencias: BSP waveshare/esp32_s3_touch_amoled_1_8, LVGL 9, mDNS
 ├── partitions.csv          nvs, otadata, phy, ota_0 (6 MB), ota_1 (6 MB), storage
